@@ -1,0 +1,33 @@
+type user = {
+  id : int;
+  is_bot : bool;
+  first_name : string;
+  last_name : string option;
+  username : string option;
+  language_code : string option;
+  is_premium : bool;
+  added_to_attachment_menu : bool;
+  can_join_groups : bool;
+  can_read_all_group_messages : bool;
+  supports_inline_queries : bool;
+}
+val empty_user : user
+type bot = Bot of string * user
+type bot_api =
+    GetMe
+  | GetUpdates
+  | SetWebhook
+  | DeleteWebhook
+  | GetWebhookInfo
+val bot_api_to_string : bot_api -> string
+val create_bot : string -> bot
+val base_url : bot -> string
+val construct_api_url : bot -> bot_api -> string
+val getMeUrl : bot -> string
+val getUpdatesUrl : bot -> string
+val get_me_req : bot -> Cohttp.Request.t
+val create_request : string -> unit -> Cohttp.Request.t
+val send_request : unit -> unit Async.Deferred.t
+val get_updates : bot -> unit
+val make_main : string -> 'a -> unit -> unit
+val start : string -> 'a -> Base.Nothing.t

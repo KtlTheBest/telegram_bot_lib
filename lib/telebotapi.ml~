@@ -1,0 +1,882 @@
+(*
+type message_type =
+  | Message
+  | EdittedMessage
+  | ChannelPost
+  | EdittedChannelPost
+  | InlineQuery
+  | ChosenInlineResult
+  | CallbackQuery
+  | ShippingQuery
+  | PreCheckoutQuery
+  | Poll
+  | PollAnswer
+  | MyChatMember
+  | ChatMember
+  | ChatJoinRequest
+
+type webhook_info = {
+  url: string;
+  has_custom_certificate: bool;
+  pending_update_count: int;
+  ip_address: string;
+  last_error_date: int;
+  last_error_message: string;
+  last_synchronization_error_date: int;
+  max_connections: int;
+  allowed_updates: string list
+}
+
+
+
+type chat_type =
+  | Private
+  | Group
+  | Supergroup
+  | Channel
+
+type chat_photo = ChatPhoto
+
+type chat_permissions = ChatPermissions
+
+type entity =
+  | Username
+  | Url
+  | BotCommand
+
+type audio = Audio
+type photo = Photo
+type sticker = Sticker
+type video_note = VideoNote
+type dice = Dice of int
+type game = Game
+type poll = Poll
+type venue = Venue
+type message_auto_delete_timer_changed = MessageAutoDeleteTimerChanged
+type invoice = Invoice
+type successful_payment = SuccessfulPayment
+type user_shared = UserShared
+type chat_shared = ChatShared
+type write_access_allowed = WriteAccessAllowed
+type passport_data = PassportData
+type proximity_alert_triggered = ProximityAlertTriggered
+type forum_topic_created = ForumTopicCreated
+type forum_topic_edited = ForumTopicEdited
+type forum_topic_closed = ForumTopicClosed
+type forum_topic_reopened = ForumTopicReopened
+type general_forum_topic_hidden = GeneralForumTopicHidden
+type general_forum_topic_unhidden = GeneralForumTopicUnhidden
+type video_chat_scheduled = VideoChatScheduled
+type video_chat_started = VideoChatStarted
+type video_chat_ended = VideoChatEnded
+type video_chat_participants_invited = VideoChatParticipantsInvited
+type web_app_data = WebAppData
+type inline_keyboard_markup = InlineKeyboardMarkup
+
+type message = {
+  message_id: int;
+  message_thread_id: int option;
+  from: user;
+  sender_chat: chat;
+  date: int;
+  chat: chat;
+  (* group those into forwarded message or something *)
+  forward_from: user option;
+  forward_from_chat: chat option;
+  forward_from_message_id: int option;
+  forward_signature: string option;
+  forward_sender_name: string option;
+  forward_date: int option;
+  (* group end *)
+  is_topic_message: bool;
+  is_automatic_forward: bool;
+  reply_to_message: message option;
+  via_bot: user;
+  edit_date: int option;
+  has_protected_content: bool;
+  media_group_id: string option;
+  author_signature: string option;
+  text: string option;
+  entities: entity list;
+  animation: animation option;
+  audio: audio option;
+  document: document option;
+  photo: photo list;
+  sticker: sticker option;
+  video: video option;
+  video_note: video_note option;
+  voice: voice;
+  caption: string option;
+  caption_entities: entity list;
+  has_media_spoiler: bool;
+  contact: contact option;
+  dice: dice option;
+  game: game option;
+  poll: poll option;
+  venue: venue option;
+  location: location option;
+  new_chat_members: user list;
+  left_chat_member: user option;
+  new_chat_title: string option;
+  new_chat_photo: photo list;
+  delete_chat_photo: bool;
+  group_chat_created: bool;
+  supergroup_chat_created: bool;
+  channel_chat_created: bool;
+  message_auto_delete_timer_changed: message_auto_delete_timer_changed option;
+  migrate_to_chat_id: int option;
+  migrate_from_chat_id: int option;
+  pinned_message: message option;
+  invoice: invoice option;
+  successful_payment: successful_payment;
+  user_shared: user_shared option;
+  chat_shared: chat_shared option;
+  connected_website: string option;
+  write_access_allowed: write_access_allowed option;
+  passport_data: passport_data option;
+  proximity_alert_triggered: proximity_alert_triggered option;
+  forum_topic_created: forum_topic_created option;
+  forum_topic_edited: forum_topic_edited option;
+  forum_topic_closed: forum_topic_closed option;
+  forum_topic_reopened: forum_topic_reopened option;
+  general_forum_topic_hidden: general_forum_topic_hidden option;
+  general_forum_topic_unhidden: general_forum_topic_unhidden option;
+  video_chat_scheduled: video_chat_scheduled option;
+  video_chat_started: video_chat_started option;
+  video_chat_ended: video_chat_ended option;
+  video_chat_participants_invited: video_chat_participants_invited option;
+  web_app_data: web_app_data option;
+  reply_markup: inline_keyboard_markup option
+}
+
+and chat = {
+  id: int;
+  _type: chat_type;
+  title: string option;
+  username: string option;
+  first_name: string option;
+  last_name: string option;
+  is_forum: bool;
+  photo: chat_photo;
+  active_usernames: string list;
+  emoji_status_custom_emoji_id: string option;
+  bio: string option;
+  has_private_forwards: bool;
+  has_restricted_voice_and_video_messages: bool;
+  join_to_send_messages: bool;
+  join_by_request: bool;
+  description: string option;
+  invite_link: string option;
+  pinned_message: message option;
+  permissions: chat_permissions option;
+  slow_mode_delay: int option;
+  message_auto_delete_time: int option;
+  has_aggressive_anti_spam_enabled: bool;
+  has_hidden_members: bool;
+  has_protected_content: bool;
+  sticker_set_name: string option;
+  can_set_sticker_set: bool;
+  linked_chat_id: int option;
+  location: chat_location option
+}
+
+and message_entity = {
+  _type: string;
+  offset: int;
+  length: int;
+  url: string option;
+  user: user option;
+  languate: string option;
+  custom_emoji_id: string option
+}
+
+and photo_size = {
+  file_id: string;
+  file_unique_id: string;
+  width: int;
+  height: int;
+  file_size: int option
+}
+
+and animation = {
+  file_id: string;
+  file_unique_id: string;
+  width: int;
+  height: int;
+  duration: int;
+  thumbnail: photo_size option;
+  file_name: string option;
+  mime_type: string option;
+  file_size: int option
+}
+
+and audio = {
+  file_id: string;
+  file_unique_id: string;
+  duration: int;
+  performer: string option;
+  title: string option;
+  file_name: string option;
+  mime_type: string option;
+  file_size: int option;
+  thumbnail: photo_size option
+}
+
+and document = {
+  file_id: string;
+  file_unique_id: string;
+  thumbnail: photo_size option;
+  file_name: string option;
+  mime_type: string option;
+  file_size: int option
+}
+
+and video = {
+  file_id: string;
+  file_unique_id: string;
+  width: int;
+  height: int;
+  duration: int;
+  thumbnail: photo_size option;
+  file_name: string option;
+  mime_type: string option;
+  file_size: int option
+}
+
+and video_note = {
+  file_id: string;
+  file_unique_id: string;
+  length: int;
+  duration: int;
+  thumbnail: photo_size option;
+  file_size: int option
+}
+
+and voice = {
+  file_id: int;
+  file_unique_id: int;
+  duration: int;
+  mime_type: string option;
+  file_size: int option
+}
+
+and contact = {
+  phone_number: string;
+  first_name: string;
+  last_name: string option;
+  user_id: float option;
+  vcard: string option
+}
+
+and dice = {
+  emoji: string;
+  value: int
+}
+
+and poll_option = {
+  text: string;
+  voter_count: int
+}
+
+and poll_answer = {
+  poll_id: string;
+  user: user;
+  option_ids: int list
+}
+
+and poll = {
+  id: string;
+  question: string;
+  options: poll_option list;
+  total_voter_count: int;
+  is_closed: bool;
+  is_anonymous: bool;
+  _type: string;
+  allows_multiple_answers: bool;
+  correct_option_id: int option;
+  explanation: string option;
+  explanation_entities: entity list;
+  open_period: int option;
+  close_date: int option
+}
+
+and location = {
+  longitude: float;
+  latitude: float;
+  horizontal_accuracy: float option;
+  live_period: int option;
+  heading: int option;
+  proximity_alert_radius: int option
+}
+
+and venue = {
+  location: location;
+  title: string;
+  address: string;
+  foursquare_id: string option;
+  foursquare_type: string option;
+  google_place_id: string option;
+  google_place_type: string option;
+}
+
+and web_app_data = {
+  data: string;
+  button_text: string
+}
+
+and proximity_alert_triggered = {
+  traveler: user;
+  watcher: user;
+  distance: int
+}
+
+and message_auto_delete_timer_changed = {
+  message_auto_delete_time: int
+}
+
+and forum_topic_created = {
+  name: string;
+  icon_color: int;
+  icon_custom_emoji_id: string option
+}
+
+and forum_topic_closed = {
+  closed: unit
+}
+
+and forum_topic_edited = {
+  name: string option;
+  icon_custom_emoji_id: string option
+}
+
+and forum_topic_reopened = {
+  reopened: unit
+}
+
+and general_forum_topic_hidden = {
+  hidden: unit
+}
+
+and general_forum_topic_unhidden = {
+  unhidden: unit
+}
+
+and user_shared = {
+  request_id: int;
+  user_id: int
+}
+
+and chat_shared = {
+  request_id: int;
+  chat_id: int
+}
+
+and write_access_allowed = {
+  web_app_name: string option
+}
+
+and video_chat_scheduled = {
+  start_date: int
+}
+
+and video_chat_started = {
+  started: unit
+}
+
+and video_chat_ended = {
+  duration: int
+}
+
+and video_chat_participants_invited = {
+  users: user list
+}
+
+and user_profile_photos = {
+  total_count: int;
+  photos: photo list list
+}
+
+and file = {
+  file_id: string;
+  file_unique_id: string;
+  file_size: int option;
+  file_path: string option
+}
+
+and web_app_info = {
+  url: string
+}
+
+and reply_keyboard_markup = {
+  keyboard: keyboard_button list list;
+  is_persistent: bool;
+  resize_keyboard: bool;
+  one_time_keyboard: bool;
+  input_field_placeholder: string option;
+  selective: bool
+}
+
+and keyboard_button = {
+  text: string;
+  request_user: keyboard_button_request_user;
+  request_chat: keyboard_button_request_chat;
+  request_contact: bool;
+  request_location: bool;
+  request_poll: bool;
+  web_app: web_app_info
+}
+
+and keyboard_button_request_user = {
+  request_id: int;
+  user_is_bot: bool;
+  user_is_premium: bool
+}
+
+and keyboard_button_request_chat = {
+  request_id: int;
+  chat_is_channel: bool;
+  chat_is_forum: bool;
+  chat_has_username: bool;
+  chat_is_created: bool;
+  user_administrator_rights: chat_administrator_rights option;
+  bot_administrator_rights: chat_administrator_rights option;
+  bot_is_member: bool
+}
+
+and keyboard_button_poll_type = {
+  _type: string
+}
+
+and reply_keyboard_remove = {
+  remove_keyboard: bool;
+  selective: bool
+}
+
+and inline_keyboard_markup = {
+  inline_keyboard: inline_keyboard_button list list
+}
+
+and inline_keyboard_button = {
+  text: string;
+  url: string option;
+  callback_data: string option;
+  web_app: web_app_info;
+  login_url: login_url;
+  switch_inline_query: string;
+  switch_inline_query_current_chat: string;
+  switch_inline_query_chosen_chat: switch_inline_query_chosen_chat;
+  callback_game: callback_game;
+  pay: bool
+}
+
+and login_url = {
+  url: string;
+  forward_text: string option;
+  bot_username: string option;
+  request_write_access: bool
+}
+
+and switch_inline_query_chosen_chat = {
+  query: string;
+  allow_users_chat: bool;
+  allow_bot_chats: bool;
+  allow_group_chats: bool;
+  allow_channel_chats: bool
+}
+
+and callback_game = {
+  game: unit
+}
+
+and callback_query = {
+  id: string;
+  from: user;
+  message: message;
+  inline_message_id: string option;
+  chat_instance: string;
+  data: string option;
+  game_short_name: string option
+}
+
+and force_reply = {
+  force_reply: bool;
+  input_field_placeholder: string option;
+  selective: bool
+}
+
+and chat_photo = {
+  small_file_id: string;
+  small_file_unique_id: string;
+  big_file_id: string;
+  big_file_unique_id: string
+}
+
+and chat_invite_link = {
+  invite_link: string;
+  creator: user;
+  creates_join_request: bool;
+  is_primary: bool;
+  is_revoked: bool;
+  name: string option;
+  expire_date: int option;
+  member_limit: int option;
+  pending_join_request_count: int option;
+}
+
+and chat_administrator_rights = {
+  is_anonymous: bool;
+  can_manage_chat: bool;
+  can_delete_messages: bool;
+  can_manage_video_chats: bool;
+  can_restrict_members: bool;
+  can_promote_members: bool;
+  can_change_info: bool;
+  can_invite_users: bool;
+  can_post_messages: bool;
+  can_edit_messages: bool;
+  can_pin_messages: bool;
+  can_manage_topics: bool
+}
+
+and chat_member =
+  | ChatMemberOwner of chat_member_owner
+  | ChatMemberAdministrator of chat_member_administrator
+  | ChatMemberMember of chat_member_member
+  | ChatMemberRestricted of chat_member_restricted
+  | ChatMemberLeft of chat_member_left
+  | ChatMemberBanned of chat_member_banned
+
+and chat_member_owner = {
+  status: string;
+  user: user;
+  is_anonymous: bool;
+  custom_title: string option
+}
+
+and chat_member_administrator = {
+  status: string;
+  user: user;
+  can_be_edited: bool;
+  is_anonymous: bool;
+  can_manage_chat: bool;
+  can_delete_messages: bool;
+  can_manage_video_chats: bool;
+  can_restrict_members: bool;
+  can_promote_members: bool;
+  can_change_info: bool;
+  can_invite_users: bool;
+  can_post_messages: bool;
+  can_edit_messages: bool;
+  can_pin_messages: bool;
+  can_manage_topics: bool;
+  custom_title: string option
+}
+
+and chat_member_member = {
+  status: string;
+  user: user
+}
+
+and chat_member_restricted = {
+  status: string;
+  user: user;
+  is_member: bool;
+  can_send_messages: bool;
+  can_send_audios: bool;
+  can_send_documents: bool;
+  can_send_photos: bool;
+  can_send_videos: bool;
+  can_send_video_notes: bool;
+  can_send_voice_notes: bool;
+  can_send_polls: bool;
+  can_send_other_messages: bool;
+  can_add_web_page_previews: bool;
+  can_change_info: bool;
+  can_invite_users: bool;
+  can_pin_messages: bool;
+  can_manage_topics: bool;
+  until_date: int
+}
+
+and chat_member_left = {
+  status: string;
+  user: user
+}
+
+and chat_member_banned = {
+  status: string;
+  user: user;
+  until_date: int
+}
+
+and chat_member_updated = {
+  chat: chat;
+  from: user;
+  date: int;
+  old_chat_member: chat_member;
+  new_chat_member: chat_member;
+  invite_link: chat_invite_link option;
+  via_chat_folder_invite_link: bool
+}
+
+and chat_join_request = {
+  chat: chat;
+  from: user;
+  user_chat_id: int;
+  date: int;
+  bio: string option;
+  invite_link: chat_invite_link
+}
+
+and chat_location = {
+  location: location;
+  address: string
+}
+
+and forum_topic = {
+  message_thread_id: int;
+  name: string;
+  icon_color: int;
+  icon_custom_emoji_id: string option
+}
+
+and bot_command = {
+  command: string;
+  description: string
+}
+
+and bot_name = {
+  name: string
+}
+
+and bot_description = {
+  description: string
+}
+
+and bot_short_description = {
+  short_description: string
+}
+
+and menu_button = 
+  | MenuButtonCommands of menu_button_commands
+  | MenuButtonWebApp of menu_button_web_app
+  | MenuButtonDefault of menu_button_default
+
+and menu_button_commands = {
+  _type: string
+}
+
+and menu_button_web_app = {
+  _type: string;
+  text: string;
+  web_app: web_app_info
+}
+
+and menu_button_default = {
+  _type: string
+}
+
+and response_parameters = {
+  migrate_to_chat_id: int option;
+  retry_after: int option
+}
+
+and input_media = 
+  | InputMediaAnimation of input_media_animation
+  | InputMediaDocument of input_media_document
+  | InputMediaAudio of input_media_audio
+  | InputMediaPhoto of input_media_photo
+  | InputMediaVideo of input_media_video
+
+and input_media_photo = {
+  _type: string;
+  media: string;
+  caption: string option;
+  parse_mode: string option;
+  caption_entities: message_entity list;
+  has_spoiler: bool
+}
+
+and input_file_or_string = 
+  | InputFile of string (* for now... *)
+  | String of string
+
+and input_media_video = {
+  _type: string;
+  media: string;
+  thumbnail: input_file_or_string;
+  caption: string option;
+  parse_mode: string option;
+  caption_entities: entity list;
+  width: int option;
+  height: int option;
+  duration: int option;
+  supports_streaming: bool;
+  has_spoiler: bool
+}
+
+and input_media_animation = {
+  _type: string;
+  media: string;
+  thumbnail: input_file_or_string;
+  caption: string option;
+  parse_mode: string option;
+  caption_entities: entity list;
+  width: int option;
+  height: int option;
+  duration: int option;
+  has_spoiler: bool
+}
+
+and input_media_audio = {
+  _type: string;
+  media: string;
+  thumbnail: input_file_or_string;
+  caption: string option;
+  parse_mode: string option;
+  caption_entities: entity list;
+  duration: int option;
+  performer: string option;
+  title: string option
+}
+
+and input_media_document = {
+  _type: string;
+  media: string;
+  thumbnail: input_file_or_string;
+  caption: string option;
+  parse_mode: string option;
+  caption_entities: entity list;
+  disable_content_type_detection: bool
+}
+
+*)
+
+type user = {
+  id: int;
+  is_bot: bool;
+  first_name: string;
+  last_name: string option;
+  username: string option;
+  language_code: string option;
+  is_premium: bool;
+  added_to_attachment_menu: bool;
+  can_join_groups: bool;
+  can_read_all_group_messages: bool;
+  supports_inline_queries: bool
+}
+
+let empty_user = {
+  id = 0;
+  is_bot = false;
+  first_name = "";
+  last_name = None;
+  username = None;
+  language_code = None;
+  is_premium = false;
+  added_to_attachment_menu = false;
+  can_join_groups = false;
+  can_read_all_group_messages = false;
+  supports_inline_queries = false;
+}
+
+                (* token * bot info *)
+type bot = Bot of string * user
+
+(* type update = { id: int; t: message_type } *)
+
+type bot_api =
+   | GetMe
+   | GetUpdates
+   | SetWebhook
+   | DeleteWebhook
+   | GetWebhookInfo
+
+type update =
+  | Message of int * string
+  | EdittedMessage of int * string
+
+type actions = 
+  | SendMessage of int * string
+
+let bot_api_to_string = function
+  | GetMe -> "/getMe"
+  | GetUpdates -> "/getUpdates"
+  | SetWebhook -> "/setWebhook"
+  | DeleteWebhook -> "/deleteWebhook"
+  | GetWebhookInfo -> "/getWebhookInfo"
+
+let create_bot (s: string) =
+  Bot (s, empty_user)
+
+let base_url (Bot (tok, _)) =
+  "https://api.telegram.org/bot" ^ tok
+
+let construct_api_url bot api =
+  base_url bot ^ (bot_api_to_string api)
+
+let getMeUrl bot =
+  construct_api_url bot GetMe
+
+let getUpdatesUrl bot =
+  construct_api_url bot GetUpdates
+
+let get_me_req (b: bot) =
+  let open Cohttp_async in
+  let url = Uri.of_string (getMeUrl b) in
+  let req = Request.make ~meth:`GET url in
+  req
+
+let create_request url () =
+  let open Cohttp in
+  let uri = Uri.of_string url in
+  let headers = Header.init () in
+  let req = Request.make ~headers uri in
+  req
+
+let send_request () =
+  let open Async in
+  let open Cohttp_async in
+  let tok = "6015962259:AAH6mC9VAqwbqniOSRnHbEOhWbkqBm2uKZ4" in
+  let bot = create_bot tok in
+  let () = print_endline (getMeUrl bot) in
+  let url = Uri.of_string (getMeUrl bot) in
+  Client.get url 
+  >>= fun (_, body) ->
+  Body.to_string_list body
+  >>| fun strings ->
+  List.iter (fun x -> print_endline x) strings
+
+let process_json_updates json = 
+  let open Yojson.Basic.Util in
+  let updates = json |> member "updates" |> to_list in
+  if updates = [] then None else
+    Some updates
+
+let get_updates b =
+  let open Async in
+  let open Cohttp_async in
+  let url = Uri.of_string (getUpdatesUrl b) in
+  Client.get url >>= fun (_, body) ->
+  Body.to_string body >>= fun s ->
+  let json = Yojson.Basic.from_string s in
+  let updates = process_json_updates json in
+  return (Some updates)
+
+let make_main tok (updates: update -> actions) = 
+  let f = fun () -> 
+    let b = create_bot tok in
+    match get_updates b with
+    | Some (update) -> 
+        let actions = List.map updates update in
+        List.iter process_actions actions
+    | None -> ()
+    in
+    Async.return res
+  in
+  Async.Deferred.forever () f
+
+let start tok update =
+  let open Async_unix in
+  let main = make_main tok update in
+  Scheduler.go_main ~main ()
