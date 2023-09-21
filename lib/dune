@@ -1,6 +1,6 @@
 (library
  (wrapped false)
  (preprocess (pps ppx_jane))
- (modules Telebotapi2)
+ (modules Telebotapi2 Types)
  (libraries async async_ssl cohttp cohttp-async yojson)
  (name telegram_bot_lib))

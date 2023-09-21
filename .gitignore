@@ -3,3 +3,5 @@ _build/
 **/_build/
 bin/
 test.py
+token
+**/token

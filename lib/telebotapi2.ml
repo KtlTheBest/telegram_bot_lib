@@ -1,20 +1,11 @@
-open Sexplib.Std
 open Async
 open Cohttp_async
 
+open Types
+
 let timeout_default = 30
 
-type bot_actions =
-  | NoAction
-  | SendMessage of string * string
-  | SendFormattedMessage of string * string * format_style
-  | ReplyToMessage of string * int * string
-  | ReplyToMessageFormatted of string * int * string * format_style
-
-and format_style =
-  | Html
-  | MarkDown
-  | MarkDownV2
+let update_contents_of u = u.update_contents
 
 let nop = NoAction
 
@@ -131,58 +122,31 @@ module ReplyKeyboard = struct
   let keyboard ss = List.map row ss
 
   let to_yojson keyboard =
-    let open Yojson.Basic in
     `Assoc [ "text", keyboard.text ]
 end
 
 module InlineKeyboard = struct
   type inline_keyboard_button = 
     { text: string; 
-      callback_query: string option 
+      callback_query: string 
     }
 
-  let row s = List.map (fun x -> { text = x; callback_query = None }) s
+  let row s = List.map (fun x -> { text = x; callback_query = "" }) s
+  let row2 s = List.map (fun (x, c) -> { text = x; callback_query = c }) s
   let keyboard ss = List.map row ss
+  let keyboard2 ss = List.map row2 ss
 
-  let to_yojson keyboard =
-    match keyboard.callback_query with
-    | None -> 
-        let open Yojson.Basic in
-        `Assoc [ "text", keyboard.text ]
-    | Some s ->
-        let open Yojson.Basic in
-        `Assoc [ "text", keyboard.text
-               ; "callback_query", s
-               ]
+  let to_yojson button =
+    `Assoc [ "text", `String button.text
+            ; "callback_data", `String button.callback_query
+            ]
+  let keyboard_to_yojson (k: inline_keyboard_button list list) =
+    let row_to_yojson r = `List (List.map to_yojson r) in
+    `Assoc [ "inline_keyboard", `List (List.map row_to_yojson k)]
 end
 
-type user_info_basic = {
-  user_id: string;
-  is_bot: bool;
-  first_name: string;
-  last_name: string option;
-  full_name: string;
-  language_code: string option;
-  is_premium: bool;
-  added_to_attachement_menu: bool
-} [@@deriving sexp]
-
-type chat_type = 
-  | Private
-  | Group
-  | SuperGroup
-  | Channel
-  [@@deriving sexp]
-
-type chat_info_basic = {
-  chat_id: string;
-  chat_type_val: chat_type;
-  title: string option;
-  username: string option;
-  first_name: string option;
-  last_name: string option;
-  is_forum: bool
-} [@@deriving sexp]
+let send_inline_keyboard chat_id text keyboard_layout =
+  SendInlineKeyboard(chat_id, text, keyboard_layout)
 
 let empty_chat = 
   { chat_id = ""
@@ -194,34 +158,31 @@ let empty_chat =
   ; is_forum = false
   }
 
-let chat_id_of chat = chat.chat_id
-
-type message_contents =
-  | Empty
-  | TextMessage of string
-  [@@deriving sexp]
-
-type message_update_basic = {
-  message_id : string;
-  message_contents_val: message_contents;
-  user: user_info_basic option;
-  chat: chat_info_basic option
-} [@@deriving sexp]
 
 let message_contents m = m.message_contents_val
 let message_id m = int_of_string m.message_id
-let chat m = Option.value ~default:empty_chat m.chat
-let chat_id m = m |> chat |> chat_id_of
 
-type update_contents =
-  | MessageUpdate of message_update_basic
-  [@@deriving sexp]
+let chat_id_of (chat: chat_info_basic) = chat.chat_id
 
-type update_info_basic = {
-  update_id: int;
-  update_contents: update_contents
-} [@@deriving sexp]
+module MessageUpdateModule : sig 
+  type t = message_update_basic
+  val chat : t -> chat_info_basic
+  val chat_id : t -> string
+end = struct
+  type t = message_update_basic
+  let chat (m:t) = m.chat
+  let chat_id m = m |> chat |> chat_id_of
+end
 
+module CallbackQueryModule : sig 
+  type t = callback_query_basic
+  val chat : t -> chat_info_basic
+  val chat_id : t -> string
+end = struct
+  type t = callback_query_basic
+  let chat (m:t) = m.chat
+  let chat_id m = m |> chat |> chat_id_of
+end
 
 let text_message s = TextMessage s
 let empty = Empty
@@ -297,36 +258,64 @@ let serialize_chat json : chat_info_basic =
     } in
     result
 
+let serialize_message_contents message_obj =
+  let open Yojson.Basic.Util in
+  let text = message_obj |> member "text" |> to_string_option in
+  match text with
+  | Some s -> text_message s
+  | None -> empty
+
 let serialize_message_update update : update_contents =
   let open Yojson.Basic.Util in
   let message_id = update |> member "message_id" |> to_int |> string_of_int in
   let sender = update |> member "from" |> serialize_user in
   let chat = update |> member "chat" |> serialize_chat in
-  let text = update |> member "text" |> to_string_option in
-  let message_contents_val = match text with
-    | Some s -> text_message s
-    | None -> empty
-  in
+  let message_contents_val = update |> serialize_message_contents in
   let result : message_update_basic = 
     { message_id = message_id
-    ; user = Some sender
-    ; chat = Some chat
+    ; user = sender
+    ; chat = chat
     ; message_contents_val = message_contents_val
     }
   in (MessageUpdate result)
 
+let serialize_callback_query_update update : update_contents =
+  let open Yojson.Basic.Util in
+  let message_id = update |> member "id" |> to_string in
+  let message_obj = update |> member "message" in
+  let chat = message_obj |> member "chat" |> serialize_chat in
+  let user = update |> member "from" |> serialize_user in
+  (* let message = update |> member "message" |> serialize_message_update in *)
+  let message_contents_val = message_obj |> serialize_message_contents in
+  let result = {
+    message_id = message_id;
+    user = user;
+    chat = chat;
+    message = message_contents_val
+  } in
+  (CallbackQuery result)
+
 let serialize_json_update update : update_info_basic =
   let open Yojson.Basic.Util in
   let update_id = update |> member "update_id" |> to_int in
-  if member "message" update != `Null then
+  let _ = Yojson.Basic.pretty_to_string (member "message" update) in
+  if member "message" update <> `Null then
     let update_contents = serialize_message_update (member "message" update) in
     let result : update_info_basic = 
       { update_id = update_id
       ; update_contents = update_contents
       }
     in result
+  else if member "callback_query" update <> `Null then
+    let update_contents = serialize_callback_query_update (member "callback_query" update) in
+    let result : update_info_basic =
+      { update_id = update_id
+      ; update_contents = update_contents
+      }
+    in result
   else
-    failwith "TODO: define else branch of serialize_json_update"
+    let s = Yojson.Basic.pretty_to_string update in
+    failwith ("TODO: define else branch of serialize_json_update\n" ^ s)
 
 let serialize_json raw_text : 'a list =
   let open Yojson.Basic.Util in 
@@ -405,6 +394,17 @@ let get_reply_formatted_message_body (chat_id: string) (msg_id: int) (message: s
   let _ = print_endline (to_string res) in
   res
 
+let get_send_inline_keyboard_message_body chat_id text keyboard_layout =
+  let open Yojson.Basic in
+  let res =
+    `Assoc [ ("chat_id"     , `String chat_id)
+           ; ("text"        , `String text)
+           ; ("reply_markup", keyboard_layout)
+           ]
+  in
+  let _ = print_endline (to_string res) in
+  res
+
 let action_performer bot action =
   let send_req_and_report body headers uri = 
     Body.to_string body >>= fun body_as_string ->
@@ -467,6 +467,18 @@ let action_performer bot action =
       let uri = Uri.of_string url in
       let body =
         (get_reply_formatted_message_body chat_id msg_id text format) 
+        |> Yojson.Basic.to_string
+        |> Body.of_string
+      in
+      send_req_and_report body headers uri
+  | SendInlineKeyboard(chat_id, text, keyboard_layout) ->
+      let headers = 
+        Cohttp.Header.of_list [ "Content-Type", "application/json" ]
+      in
+      let url = get_reply_to_message_url bot in
+      let uri = Uri.of_string url in
+      let body =
+        (get_send_inline_keyboard_message_body chat_id text keyboard_layout) 
         |> Yojson.Basic.to_string
         |> Body.of_string
       in
