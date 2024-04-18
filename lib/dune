@@ -1,6 +1,7 @@
 (library
  (wrapped false)
  (preprocess (pps ppx_jane))
- (modules Telebotapi2 Types)
- (libraries async async_ssl cohttp cohttp-async yojson)
- (name telegram_bot_lib))
+ (modules Telebotapi3 Types)
+ (libraries lwt cohttp cohttp-lwt-unix cohttp-lwt lwt_ssl yojson batteries)
+ (public_name telegram_bot_lib)
+ (name telegram_bot_lib_source_code))
